@@ -61,11 +61,15 @@ const bookFilters = reactive({
   keyword: '',
   category: '',
   status: '',
+  sort: '',
 })
 
 const readerFilters = reactive({
   keyword: '',
   status: '',
+  department: '',
+  gender: '',
+  sort: '',
 })
 
 const borrowFilters = reactive({
@@ -100,6 +104,44 @@ const returnDialog = reactive({
 
 const bookCategories = computed(() => {
   return [...new Set(books.value.map((book) => book.category).filter(Boolean))]
+})
+
+const sortedBooks = computed(() => {
+  return sortItems(books.value, bookFilters.sort, {
+    'title-asc': { field: 'title', direction: 'asc', type: 'text' },
+    'title-desc': { field: 'title', direction: 'desc', type: 'text' },
+    'author-asc': { field: 'author', direction: 'asc', type: 'text' },
+    'author-desc': { field: 'author', direction: 'desc', type: 'text' },
+    'location-asc': { field: 'location', direction: 'asc', type: 'natural' },
+    'location-desc': { field: 'location', direction: 'desc', type: 'natural' },
+    'publish-date-asc': { field: 'publishDate', direction: 'asc', type: 'date' },
+    'publish-date-desc': { field: 'publishDate', direction: 'desc', type: 'date' },
+  })
+})
+
+const readerDepartments = computed(() => {
+  return [...new Set(readers.value.map((reader) => reader.department).filter(Boolean))]
+})
+
+const readerGenders = computed(() => {
+  return [...new Set(readers.value.map((reader) => reader.gender).filter(Boolean))]
+})
+
+const filteredSortedReaders = computed(() => {
+  const filteredReaders = readers.value.filter((reader) => {
+    const matchesDepartment = !readerFilters.department || reader.department === readerFilters.department
+    const matchesGender = !readerFilters.gender || reader.gender === readerFilters.gender
+    return matchesDepartment && matchesGender
+  })
+
+  return sortItems(filteredReaders, readerFilters.sort, {
+    'name-asc': { field: 'name', direction: 'asc', type: 'text' },
+    'name-desc': { field: 'name', direction: 'desc', type: 'text' },
+    'registered-date-asc': { field: 'registeredDate', direction: 'asc', type: 'date' },
+    'registered-date-desc': { field: 'registeredDate', direction: 'desc', type: 'date' },
+    'card-number-asc': { field: 'cardNumber', direction: 'asc', type: 'natural' },
+    'card-number-desc': { field: 'cardNumber', direction: 'desc', type: 'natural' },
+  })
 })
 
 const availableBooks = computed(() => {
@@ -216,11 +258,13 @@ async function fetchOverview() {
 }
 
 async function fetchBooks() {
-  books.value = await listBooks(cleanParams(bookFilters))
+  const { keyword, category, status } = bookFilters
+  books.value = await listBooks(cleanParams({ keyword, category, status }))
 }
 
 async function fetchReaders() {
-  readers.value = await listReaders(cleanParams(readerFilters))
+  const { keyword, status } = readerFilters
+  readers.value = await listReaders(cleanParams({ keyword, status }))
 }
 
 async function fetchBorrows() {
@@ -229,6 +273,38 @@ async function fetchBorrows() {
 
 function cleanParams(params) {
   return Object.fromEntries(Object.entries(params).filter(([, value]) => value !== ''))
+}
+
+function sortItems(items, sortKey, sortRules) {
+  const rule = sortRules[sortKey]
+  if (!rule) {
+    return items
+  }
+
+  return [...items].sort((left, right) => {
+    const result = compareValues(left[rule.field], right[rule.field], rule.type)
+    return rule.direction === 'desc' ? -result : result
+  })
+}
+
+function compareValues(left, right, type) {
+  if (type === 'date') {
+    return compareDates(left, right)
+  }
+  return compareText(left, right, type === 'natural')
+}
+
+function compareText(left, right, numeric = false) {
+  return String(left ?? '').localeCompare(String(right ?? ''), 'zh-Hans-CN', {
+    numeric,
+    sensitivity: 'base',
+  })
+}
+
+function compareDates(left, right) {
+  const leftTime = left ? new Date(left).getTime() : 0
+  const rightTime = right ? new Date(right).getTime() : 0
+  return leftTime - rightTime
 }
 
 function openBookDialog(book) {
@@ -522,10 +598,20 @@ function isOverdue(record) {
                 <el-option label="可借" value="available" />
                 <el-option label="不可借" value="unavailable" />
               </el-select>
+              <el-select v-model="bookFilters.sort" clearable placeholder="排序方式">
+                <el-option label="书名 A-Z" value="title-asc" />
+                <el-option label="书名 Z-A" value="title-desc" />
+                <el-option label="作者 A-Z" value="author-asc" />
+                <el-option label="作者 Z-A" value="author-desc" />
+                <el-option label="位置 从小到大" value="location-asc" />
+                <el-option label="位置 从大到小" value="location-desc" />
+                <el-option label="出版时间 正序" value="publish-date-asc" />
+                <el-option label="出版时间 倒序" value="publish-date-desc" />
+              </el-select>
               <el-button :icon="Search" type="primary" @click="fetchBooks">查询</el-button>
               <el-button :icon="Plus" type="success" @click="openBookDialog()">新增图书</el-button>
             </div>
-            <el-table :data="books" stripe>
+            <el-table :data="sortedBooks" stripe>
               <el-table-column prop="title" label="书名" min-width="180" show-overflow-tooltip />
               <el-table-column prop="author" label="作者" width="120" />
               <el-table-column prop="isbn" label="ISBN" width="150" />
@@ -561,10 +647,29 @@ function isOverdue(record) {
                 <el-option label="正常" value="ACTIVE" />
                 <el-option label="停用" value="DISABLED" />
               </el-select>
+              <el-select v-model="readerFilters.department" clearable placeholder="院系班级">
+                <el-option
+                  v-for="department in readerDepartments"
+                  :key="department"
+                  :label="department"
+                  :value="department"
+                />
+              </el-select>
+              <el-select v-model="readerFilters.gender" clearable placeholder="性别">
+                <el-option v-for="gender in readerGenders" :key="gender" :label="gender" :value="gender" />
+              </el-select>
+              <el-select v-model="readerFilters.sort" clearable placeholder="排序方式">
+                <el-option label="姓名 A-Z" value="name-asc" />
+                <el-option label="姓名 Z-A" value="name-desc" />
+                <el-option label="登记日期 正序" value="registered-date-asc" />
+                <el-option label="登记日期 倒序" value="registered-date-desc" />
+                <el-option label="借阅证号 从小到大" value="card-number-asc" />
+                <el-option label="借阅证号 从大到小" value="card-number-desc" />
+              </el-select>
               <el-button :icon="Search" type="primary" @click="fetchReaders">查询</el-button>
               <el-button :icon="Plus" type="success" @click="openReaderDialog()">新增读者</el-button>
             </div>
-            <el-table :data="readers" stripe>
+            <el-table :data="filteredSortedReaders" stripe>
               <el-table-column prop="name" label="姓名" width="120" />
               <el-table-column prop="cardNumber" label="借阅证号" width="140" />
               <el-table-column prop="gender" label="性别" width="80" />

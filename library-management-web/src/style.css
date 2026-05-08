@@ -282,14 +282,15 @@ textarea {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(140px, 180px)) auto auto;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   align-items: center;
   margin-bottom: 16px;
 }
 
 .toolbar .el-input,
-.toolbar .el-select {
+.toolbar .el-select,
+.toolbar .el-button {
   width: 100%;
 }
 
