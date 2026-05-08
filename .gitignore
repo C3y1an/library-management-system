@@ -1,0 +1,49 @@
+# Local documents and non-project materials
+word/
+
+# Java / Spring Boot
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+**/.apt_generated/
+**/.classpath
+**/.factorypath
+**/.project
+**/.settings/
+**/.springBeans
+**/.sts4-cache/
+**/build/
+
+# Node / Vite
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.vite/
+
+# Logs and local runtime output
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.out.log
+*.err.log
+
+# Local environment files
+.env
+.env.*
+*.local
+
+# Editors and OS files
+.idea/
+.vscode/
+*.iws
+*.iml
+*.ipr
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
