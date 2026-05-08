@@ -1,44 +1,60 @@
 # 图书管理系统后端
 
-Spring Boot + Spring Data JPA 后端服务，默认接口前缀为 `/api`。
+这是图书管理系统的 Spring Boot 后端服务，接口默认以 `/api` 开头。
 
-## 启动方式
+## 推荐启动方式：dev 模式
 
-使用默认 MySQL 配置：
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-如果本机还没有 MySQL，可以先用 H2 内存库启动：
+首次运行或本地演示时，推荐使用 `dev` 模式：
 
 ```powershell
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
 ```
 
-开发模式会自动初始化两本图书和两名读者。H2 控制台地址为 `http://localhost:8080/h2-console`。
+`dev` 模式会使用 H2 内存数据库：
 
-## 默认账号
+- 不需要安装 MySQL。
+- 启动时自动初始化示例图书和读者数据。
+- 服务关闭后数据会清空。
+- 下次启动会重新生成示例数据。
+
+H2 控制台地址：
 
 ```text
-用户名: admin
-密码: admin123
+http://localhost:8080/h2-console
+```
+
+## 使用 MySQL 启动
+
+如果要长期保存真实数据，请使用 MySQL。默认配置会读取以下环境变量：
+
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+
+PowerShell 示例：
+
+```powershell
+$env:DB_URL="jdbc:mysql://localhost:3306/library_management?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai"
+$env:DB_USERNAME="root"
+$env:DB_PASSWORD="你的MySQL密码"
+
+.\mvnw.cmd spring-boot:run
+```
+
+## 默认登录账号
+
+```text
+用户名：admin
+密码：admin123
 ```
 
 ## 主要接口
 
-### 登录
+登录：
 
 - `POST /api/auth/login`
 
-```json
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
-
-### 图书管理
+图书管理：
 
 - `GET /api/books?keyword=&category=&status=available`
 - `GET /api/books/{id}`
@@ -46,21 +62,7 @@ Spring Boot + Spring Data JPA 后端服务，默认接口前缀为 `/api`。
 - `PUT /api/books/{id}`
 - `DELETE /api/books/{id}`
 
-```json
-{
-  "title": "软件工程导论",
-  "author": "张海藩",
-  "isbn": "9787302142180",
-  "publisher": "清华大学出版社",
-  "category": "软件工程",
-  "location": "A-01-01",
-  "publishDate": "2022-01-01",
-  "totalCopies": 5,
-  "description": "软件工程课程设计参考书"
-}
-```
-
-### 读者管理
+读者管理：
 
 - `GET /api/readers?keyword=&status=ACTIVE`
 - `GET /api/readers/{id}`
@@ -68,37 +70,13 @@ Spring Boot + Spring Data JPA 后端服务，默认接口前缀为 `/api`。
 - `PUT /api/readers/{id}`
 - `DELETE /api/readers/{id}`
 
-```json
-{
-  "name": "李明",
-  "gender": "男",
-  "phone": "13800000001",
-  "email": "liming@example.com",
-  "department": "软件工程1班",
-  "cardNumber": "R20260001",
-  "registeredDate": "2026-05-06",
-  "status": "ACTIVE"
-}
-```
-
-### 借阅归还
+借阅归还：
 
 - `GET /api/borrows?keyword=&status=BORROWED`
 - `GET /api/borrows/{id}`
 - `POST /api/borrows`
 - `POST /api/borrows/{id}/return`
 
-```json
-{
-  "bookId": 1,
-  "readerId": 1,
-  "borrowDate": "2026-05-06",
-  "dueDate": "2026-06-05"
-}
-```
-
-### 统计
+统计：
 
 - `GET /api/statistics/overview`
-
-返回图书种类数、馆藏册数、可借册数、读者数、当前借阅数和逾期数。
