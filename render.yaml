@@ -4,8 +4,8 @@ services:
     runtime: docker
     rootDir: library-management
     plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    dockerfilePath: ./library-management/Dockerfile
+    dockerContext: ./library-management
     envVars:
       - key: DB_URL
         sync: false

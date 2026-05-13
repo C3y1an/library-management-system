@@ -42,8 +42,8 @@ If you only need demo data, skip the import. The backend seeds sample data when 
 3. If using Web Service manually:
    - Root Directory: `library-management`
    - Runtime: Docker
-   - Dockerfile Path: `./Dockerfile`
-   - Docker Context: `.`
+   - Dockerfile Path: `./library-management/Dockerfile`
+   - Docker Context: `./library-management`
 4. Add environment variables:
 
 ```text
