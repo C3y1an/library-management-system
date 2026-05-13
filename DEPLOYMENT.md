@@ -41,9 +41,9 @@ If you only need demo data, skip the import. The backend seeds sample data when 
 2. In Render, create a new Blueprint or Web Service from this repo.
 3. If using Web Service manually:
    - Root Directory: `library-management`
-   - Runtime: Java
-   - Build Command: `./mvnw clean package -DskipTests`
-   - Start Command: `java -jar target/library-management-0.0.1-SNAPSHOT.jar`
+   - Runtime: Docker
+   - Dockerfile Path: `./library-management/Dockerfile`
+   - Docker Context: `./library-management`
 4. Add environment variables:
 
 ```text
