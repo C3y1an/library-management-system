@@ -18,6 +18,7 @@ word/
 **/dist/
 **/dist-ssr/
 **/.vite/
+**/release/
 
 # Logs and local runtime output
 logs/

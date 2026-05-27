@@ -55,6 +55,9 @@ public class ReaderService {
         if (hasBorrowedBooks) {
             throw new IllegalArgumentException("该读者仍有未归还图书，不能删除");
         }
+        if (borrowRecordRepository.existsByReaderId(id)) {
+            throw new IllegalArgumentException("该读者已有借阅历史，不能直接删除");
+        }
         readerRepository.delete(reader);
     }
 

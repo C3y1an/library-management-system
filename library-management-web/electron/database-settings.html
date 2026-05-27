@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>切换数据库</title>
+    <style>
+      :root {
+        color: #1f2937;
+        background: #f6f7f9;
+        font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+      }
+
+      main {
+        display: flex;
+        min-height: 100vh;
+        flex-direction: column;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .status,
+      fieldset {
+        border: 1px solid #d7dce3;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .status {
+        padding: 13px 15px;
+        line-height: 1.7;
+      }
+
+      .status strong {
+        color: #0f766e;
+      }
+
+      fieldset {
+        margin: 0;
+        padding: 6px;
+      }
+
+      legend {
+        padding: 0 8px;
+        color: #4b5563;
+        font-size: 13px;
+      }
+
+      label.option {
+        display: grid;
+        grid-template-columns: 20px 1fr;
+        gap: 10px;
+        align-items: start;
+        padding: 12px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      label.option + label.option {
+        border-top: 1px solid #eef0f3;
+      }
+
+      label.option:hover {
+        background: #f8fafc;
+      }
+
+      input[type="radio"] {
+        margin-top: 3px;
+      }
+
+      .option-title {
+        display: block;
+        font-weight: 700;
+      }
+
+      .option-note {
+        display: block;
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .panel {
+        display: none;
+        margin: 4px 12px 12px 42px;
+        border-top: 1px dashed #d7dce3;
+        padding-top: 12px;
+      }
+
+      .panel.visible {
+        display: block;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .form-row {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .form-row.full {
+        grid-column: 1 / -1;
+      }
+
+      .input-line {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+
+      span.label {
+        color: #475569;
+        font-size: 13px;
+      }
+
+      input {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 9px 10px;
+        font-size: 14px;
+      }
+
+      input:disabled {
+        color: #94a3b8;
+        background: #f1f5f9;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: auto;
+      }
+
+      button {
+        min-width: 88px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #1f2937;
+        padding: 8px 14px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      button.primary {
+        border-color: #2563eb;
+        background: #2563eb;
+        color: #ffffff;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .message {
+        min-height: 20px;
+        color: #0f766e;
+        font-size: 13px;
+      }
+
+      .message.error {
+        color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>切换数据库</h1>
+
+      <section class="status">
+        当前实际连接：<strong id="active-mode">正在读取...</strong><br />
+        接口地址：<span id="active-api">正在读取...</span>
+      </section>
+
+      <fieldset>
+        <legend>本地数据库</legend>
+        <label class="option">
+          <input type="radio" name="databaseMode" value="local" />
+          <span>
+            <span class="option-title">启用本地数据库</span>
+            <span class="option-note">桌面应用启动内置后端，数据保存在本机或本机数据库服务中。</span>
+          </span>
+        </label>
+
+        <div id="local-panel" class="panel">
+          <label class="option">
+            <input type="radio" name="localDatabaseType" value="embedded" />
+            <span>
+              <span class="option-title">内置本地数据库（推荐）</span>
+              <span class="option-note">无需安装数据库。默认保存位置：<span id="embedded-path"></span>.mv.db</span>
+            </span>
+          </label>
+
+          <label class="option">
+            <input type="radio" name="localDatabaseType" value="h2File" />
+            <span>
+              <span class="option-title">自定义本地数据库文件</span>
+              <span class="option-note">仍然使用 H2 文件数据库，但可以把数据放到指定位置，方便备份和迁移。</span>
+            </span>
+          </label>
+          <div id="h2-panel" class="panel">
+            <div class="form-row full">
+              <span class="label">数据库文件路径</span>
+              <div class="input-line">
+                <input id="custom-h2-path" type="text" placeholder="D:\LibraryData\library_management" />
+                <button id="choose-h2" type="button">选择</button>
+              </div>
+            </div>
+          </div>
+
+          <label class="option">
+            <input type="radio" name="localDatabaseType" value="mysql" />
+            <span>
+              <span class="option-title">本机 MySQL 数据库</span>
+              <span class="option-note">适合已经安装 MySQL 的用户，应用会连接本机 MySQL 保存数据。</span>
+            </span>
+          </label>
+          <div id="mysql-panel" class="panel">
+            <div class="form-grid">
+              <label class="form-row">
+                <span class="label">主机</span>
+                <input id="mysql-host" type="text" placeholder="127.0.0.1" />
+              </label>
+              <label class="form-row">
+                <span class="label">端口</span>
+                <input id="mysql-port" type="text" placeholder="3306" />
+              </label>
+              <label class="form-row">
+                <span class="label">数据库名</span>
+                <input id="mysql-database" type="text" placeholder="library_management" />
+              </label>
+              <label class="form-row">
+                <span class="label">用户名</span>
+                <input id="mysql-username" type="text" placeholder="root" />
+              </label>
+              <label class="form-row full">
+                <span class="label">密码</span>
+                <input id="mysql-password" type="password" />
+              </label>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>云端服务器数据库</legend>
+        <label class="option">
+          <input type="radio" name="databaseMode" value="cloud" />
+          <span>
+            <span class="option-title">启用云端 API 服务</span>
+            <span class="option-note">桌面端不直连云数据库，只连接云端 API。可以填 Render 服务根地址，程序会自动补 /api。</span>
+          </span>
+        </label>
+        <div id="cloud-panel" class="panel">
+          <div class="form-row full">
+            <span class="label">云端 API 地址</span>
+            <div class="input-line">
+              <input id="cloud-api" type="url" placeholder="https://example.onrender.com 或 https://example.onrender.com/api" />
+              <button id="test-cloud" type="button">验证连接</button>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <div id="message" class="message"></div>
+
+      <div class="actions">
+        <button id="close" type="button">关闭</button>
+        <button id="save" type="button">保存</button>
+        <button id="save-restart" class="primary" type="button">保存并重启</button>
+      </div>
+    </main>
+
+    <script>
+      const activeMode = document.querySelector('#active-mode')
+      const activeApi = document.querySelector('#active-api')
+      const embeddedPath = document.querySelector('#embedded-path')
+      const message = document.querySelector('#message')
+      const saveButton = document.querySelector('#save')
+      const saveRestartButton = document.querySelector('#save-restart')
+      const closeButton = document.querySelector('#close')
+      const chooseH2Button = document.querySelector('#choose-h2')
+      const testCloudButton = document.querySelector('#test-cloud')
+
+      const localPanel = document.querySelector('#local-panel')
+      const h2Panel = document.querySelector('#h2-panel')
+      const mysqlPanel = document.querySelector('#mysql-panel')
+      const cloudPanel = document.querySelector('#cloud-panel')
+
+      const fields = {
+        customH2Path: document.querySelector('#custom-h2-path'),
+        mysqlHost: document.querySelector('#mysql-host'),
+        mysqlPort: document.querySelector('#mysql-port'),
+        mysqlDatabase: document.querySelector('#mysql-database'),
+        mysqlUsername: document.querySelector('#mysql-username'),
+        mysqlPassword: document.querySelector('#mysql-password'),
+        cloudApiBaseUrl: document.querySelector('#cloud-api'),
+      }
+
+      const modeInputs = Array.from(document.querySelectorAll('input[name="databaseMode"]'))
+      const localTypeInputs = Array.from(document.querySelectorAll('input[name="localDatabaseType"]'))
+
+      function selectedMode() {
+        return modeInputs.find((input) => input.checked)?.value || 'local'
+      }
+
+      function selectedLocalType() {
+        return localTypeInputs.find((input) => input.checked)?.value || 'embedded'
+      }
+
+      function setMessage(text, isError = false) {
+        message.textContent = text
+        message.classList.toggle('error', isError)
+      }
+
+      function updatePanels() {
+        const mode = selectedMode()
+        const localType = selectedLocalType()
+        localPanel.classList.toggle('visible', mode === 'local')
+        cloudPanel.classList.toggle('visible', mode === 'cloud')
+        h2Panel.classList.toggle('visible', mode === 'local' && localType === 'h2File')
+        mysqlPanel.classList.toggle('visible', mode === 'local' && localType === 'mysql')
+      }
+
+      function collectSettings() {
+        return {
+          databaseMode: selectedMode(),
+          localDatabaseType: selectedLocalType(),
+          customH2Path: fields.customH2Path.value,
+          mysqlHost: fields.mysqlHost.value,
+          mysqlPort: fields.mysqlPort.value,
+          mysqlDatabase: fields.mysqlDatabase.value,
+          mysqlUsername: fields.mysqlUsername.value,
+          mysqlPassword: fields.mysqlPassword.value,
+          cloudApiBaseUrl: fields.cloudApiBaseUrl.value,
+        }
+      }
+
+      async function saveSettings() {
+        const settings = await window.libraryDesktop.saveDatabaseSettings(collectSettings())
+        setMessage('设置已保存，重启应用后生效。')
+        return settings
+      }
+
+      async function loadSettings() {
+        const settings = await window.libraryDesktop.getDatabaseSettings()
+        activeMode.textContent = settings.activeModeLabel
+        activeApi.textContent = settings.activeApiBaseUrl
+        embeddedPath.textContent = settings.embeddedDatabasePath
+
+        modeInputs.forEach((input) => {
+          input.checked = input.value === settings.databaseMode
+        })
+        localTypeInputs.forEach((input) => {
+          input.checked = input.value === settings.localDatabaseType
+        })
+
+        fields.customH2Path.value = settings.customH2Path || ''
+        fields.mysqlHost.value = settings.mysqlHost || '127.0.0.1'
+        fields.mysqlPort.value = settings.mysqlPort || '3306'
+        fields.mysqlDatabase.value = settings.mysqlDatabase || 'library_management'
+        fields.mysqlUsername.value = settings.mysqlUsername || 'root'
+        fields.mysqlPassword.value = settings.mysqlPassword || ''
+        fields.cloudApiBaseUrl.value = settings.cloudApiBaseUrl || ''
+        updatePanels()
+      }
+
+      modeInputs.forEach((input) => {
+        input.addEventListener('change', () => {
+          updatePanels()
+          setMessage('')
+        })
+      })
+
+      localTypeInputs.forEach((input) => {
+        input.addEventListener('change', () => {
+          updatePanels()
+          setMessage('')
+        })
+      })
+
+      chooseH2Button.addEventListener('click', async () => {
+        const filePath = await window.libraryDesktop.chooseH2DatabaseFile()
+        if (filePath) {
+          fields.customH2Path.value = filePath
+          setMessage('')
+        }
+      })
+
+      testCloudButton.addEventListener('click', async () => {
+        testCloudButton.disabled = true
+        setMessage('正在验证云端连接...')
+        const result = await window.libraryDesktop.testCloudConnection(fields.cloudApiBaseUrl.value)
+        setMessage(result.message, !result.ok)
+        testCloudButton.disabled = false
+      })
+
+      saveButton.addEventListener('click', async () => {
+        await saveSettings()
+      })
+
+      saveRestartButton.addEventListener('click', async () => {
+        await saveSettings()
+        await window.libraryDesktop.restartApp()
+      })
+
+      closeButton.addEventListener('click', () => {
+        window.close()
+      })
+
+      loadSettings().catch(() => {
+        setMessage('读取设置失败。', true)
+      })
+    </script>
+  </body>
+</html>

@@ -9,6 +9,10 @@ import java.util.List;
 public interface BorrowRecordRepository extends JpaRepository<BorrowRecord, Long> {
     long countByStatus(BorrowStatus status);
 
+    boolean existsByBookId(Long bookId);
+
+    boolean existsByReaderId(Long readerId);
+
     boolean existsByReaderIdAndStatus(Long readerId, BorrowStatus status);
 
     @Query("""

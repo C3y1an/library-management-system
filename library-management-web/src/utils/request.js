@@ -1,11 +1,15 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+export const API_BASE_URL = window.libraryDesktop?.apiBaseUrl
+  || import.meta.env.VITE_API_BASE_URL
+  || 'http://localhost:8080/api'
+
+const isLocalApi = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(API_BASE_URL)
 
 const request = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: isLocalApi ? 10000 : 45000,
 })
 
 request.interceptors.request.use((config) => {

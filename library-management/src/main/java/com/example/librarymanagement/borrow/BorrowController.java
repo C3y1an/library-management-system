@@ -2,6 +2,7 @@ package com.example.librarymanagement.borrow;
 
 import com.example.librarymanagement.common.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,5 +42,11 @@ public class BorrowController {
     public ApiResponse<BorrowRecord> returnBook(@PathVariable Long id,
                                                 @RequestBody(required = false) ReturnRequest request) {
         return ApiResponse.ok("图书归还成功", borrowService.returnBook(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        borrowService.delete(id);
+        return ApiResponse.ok("借阅记录已删除", null);
     }
 }

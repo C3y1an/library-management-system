@@ -1,5 +1,6 @@
 package com.example.librarymanagement.book;
 
+import com.example.librarymanagement.borrow.BorrowRecordRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,9 +9,11 @@ import java.util.List;
 @Service
 public class BookService {
     private final BookRepository bookRepository;
+    private final BorrowRecordRepository borrowRecordRepository;
 
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository, BorrowRecordRepository borrowRecordRepository) {
         this.bookRepository = bookRepository;
+        this.borrowRecordRepository = borrowRecordRepository;
     }
 
     public List<Book> list(String keyword, String category, String status) {
@@ -69,6 +72,9 @@ public class BookService {
         Book book = get(id);
         if (!book.getTotalCopies().equals(book.getAvailableCopies())) {
             throw new IllegalArgumentException("该图书仍有未归还记录，不能删除");
+        }
+        if (borrowRecordRepository.existsByBookId(id)) {
+            throw new IllegalArgumentException("该图书已有借阅历史，不能直接删除");
         }
         bookRepository.delete(book);
     }

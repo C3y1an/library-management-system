@@ -22,6 +22,7 @@ import {
   createBorrow,
   createReader,
   deleteBook,
+  deleteBorrow,
   deleteReader,
   getOverview,
   listBooks,
@@ -75,6 +76,7 @@ const readerFilters = reactive({
 const borrowFilters = reactive({
   keyword: '',
   status: '',
+  sort: '',
 })
 
 const bookDialog = reactive({
@@ -150,6 +152,34 @@ const availableBooks = computed(() => {
 
 const activeReaders = computed(() => {
   return readers.value.filter((reader) => reader.status === 'ACTIVE')
+})
+
+const sortedBorrows = computed(() => {
+  return sortItems(borrows.value, borrowFilters.sort, {
+    'borrow-date-asc': { field: 'borrowDate', direction: 'asc', type: 'date' },
+    'borrow-date-desc': { field: 'borrowDate', direction: 'desc', type: 'date' },
+    'due-date-asc': { field: 'dueDate', direction: 'asc', type: 'date' },
+    'due-date-desc': { field: 'dueDate', direction: 'desc', type: 'date' },
+    'return-date-asc': { field: 'returnDate', direction: 'asc', type: 'date' },
+    'return-date-desc': { field: 'returnDate', direction: 'desc', type: 'date' },
+    'book-title-asc': { field: 'book.title', direction: 'asc', type: 'text' },
+    'book-title-desc': { field: 'book.title', direction: 'desc', type: 'text' },
+    'reader-name-asc': { field: 'reader.name', direction: 'asc', type: 'text' },
+    'reader-name-desc': { field: 'reader.name', direction: 'desc', type: 'text' },
+    'card-number-asc': { field: 'reader.cardNumber', direction: 'asc', type: 'natural' },
+    'card-number-desc': { field: 'reader.cardNumber', direction: 'desc', type: 'natural' },
+  })
+})
+
+const recentBorrows = computed(() => {
+  return [...borrows.value].sort((left, right) => {
+    const leftId = Number(left.id || 0)
+    const rightId = Number(right.id || 0)
+    if (leftId !== rightId) {
+      return rightId - leftId
+    }
+    return compareDates(right.borrowDate, left.borrowDate)
+  })
 })
 
 const statCards = computed(() => [
@@ -268,7 +298,8 @@ async function fetchReaders() {
 }
 
 async function fetchBorrows() {
-  borrows.value = await listBorrows(cleanParams(borrowFilters))
+  const { keyword, status } = borrowFilters
+  borrows.value = await listBorrows(cleanParams({ keyword, status }))
 }
 
 function cleanParams(params) {
@@ -282,9 +313,15 @@ function sortItems(items, sortKey, sortRules) {
   }
 
   return [...items].sort((left, right) => {
-    const result = compareValues(left[rule.field], right[rule.field], rule.type)
+    const result = compareValues(getFieldValue(left, rule.field), getFieldValue(right, rule.field), rule.type)
     return rule.direction === 'desc' ? -result : result
   })
+}
+
+function getFieldValue(item, field) {
+  return String(field)
+    .split('.')
+    .reduce((value, key) => value?.[key], item)
 }
 
 function compareValues(left, right, type) {
@@ -448,6 +485,28 @@ async function submitReturn() {
   }
 }
 
+async function confirmDeleteBorrow(record) {
+  const bookTitle = record.book?.title || '该图书'
+  const readerName = record.reader?.name || '该读者'
+  try {
+    await ElMessageBox.confirm(`确定删除 ${readerName} 的《${bookTitle}》借阅记录吗？`, '删除借阅记录', {
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  loading.value = true
+  try {
+    await deleteBorrow(record.id)
+    ElMessage.success('借阅记录已删除')
+    await refreshAll()
+  } catch {
+    ElMessage.error('借阅记录删除失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 function statusTag(status) {
   return status === 'ACTIVE' || status === 'BORROWED' ? 'success' : 'info'
 }
@@ -563,7 +622,7 @@ function isOverdue(record) {
               </div>
               <el-button text type="primary" @click="activeSection = 'borrows'">查看全部</el-button>
             </div>
-            <el-table :data="borrows.slice(0, 6)" stripe>
+            <el-table :data="recentBorrows.slice(0, 6)" stripe>
               <el-table-column label="图书" min-width="180">
                 <template #default="{ row }">{{ row.book?.title || '-' }}</template>
               </el-table-column>
@@ -577,6 +636,11 @@ function isOverdue(record) {
                   <el-tag :type="isOverdue(row) ? 'danger' : statusTag(row.status)" effect="light">
                     {{ isOverdue(row) ? '已逾期' : borrowStatusText(row.status) }}
                   </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="删除" fixed="right" width="90">
+                <template #default="{ row }">
+                  <el-button :icon="Delete" circle type="danger" @click="confirmDeleteBorrow(row)" />
                 </template>
               </el-table-column>
             </el-table>
@@ -703,10 +767,24 @@ function isOverdue(record) {
                 <el-option label="借阅中" value="BORROWED" />
                 <el-option label="已归还" value="RETURNED" />
               </el-select>
+              <el-select v-model="borrowFilters.sort" clearable placeholder="排序方式">
+                <el-option label="借阅日期 正序" value="borrow-date-asc" />
+                <el-option label="借阅日期 倒序" value="borrow-date-desc" />
+                <el-option label="应还日期 正序" value="due-date-asc" />
+                <el-option label="应还日期 倒序" value="due-date-desc" />
+                <el-option label="归还日期 正序" value="return-date-asc" />
+                <el-option label="归还日期 倒序" value="return-date-desc" />
+                <el-option label="图书 A-Z" value="book-title-asc" />
+                <el-option label="图书 Z-A" value="book-title-desc" />
+                <el-option label="读者 A-Z" value="reader-name-asc" />
+                <el-option label="读者 Z-A" value="reader-name-desc" />
+                <el-option label="证号 从小到大" value="card-number-asc" />
+                <el-option label="证号 从大到小" value="card-number-desc" />
+              </el-select>
               <el-button :icon="Search" type="primary" @click="fetchBorrows">查询</el-button>
               <el-button :icon="Plus" type="success" @click="openBorrowDialog">登记借阅</el-button>
             </div>
-            <el-table :data="borrows" stripe>
+            <el-table :data="sortedBorrows" stripe>
               <el-table-column label="图书" min-width="180">
                 <template #default="{ row }">{{ row.book?.title || '-' }}</template>
               </el-table-column>
@@ -726,7 +804,7 @@ function isOverdue(record) {
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" fixed="right" width="120">
+              <el-table-column label="操作" fixed="right" width="150">
                 <template #default="{ row }">
                   <el-button
                     v-if="row.status === 'BORROWED'"
@@ -738,6 +816,11 @@ function isOverdue(record) {
                     还书
                   </el-button>
                   <span v-else class="muted">完成</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="删除" fixed="right" width="90">
+                <template #default="{ row }">
+                  <el-button :icon="Delete" circle type="danger" @click="confirmDeleteBorrow(row)" />
                 </template>
               </el-table-column>
             </el-table>

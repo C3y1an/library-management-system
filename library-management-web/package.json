@@ -5,8 +5,33 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "electron:dev": "npm run build:backend && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
     "build": "vite build",
+    "build:backend": "cd ../library-management && mvnw.cmd -q -DskipTests package",
+    "build:desktop": "npm run build:backend && npm run build && electron-builder",
     "preview": "vite preview"
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.example.librarymanagement",
+    "productName": "图书管理系统",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../library-management/target/library-management-0.0.1-SNAPSHOT.jar",
+        "to": "backend/library-management.jar"
+      }
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    }
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
@@ -18,6 +43,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.6",
+    "cross-env": "^7.0.3",
+    "electron": "^39.2.6",
+    "electron-builder": "^26.0.12",
     "vite": "^8.0.10"
   }
 }

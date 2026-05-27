@@ -84,6 +84,16 @@ public class BorrowService {
         return borrowRecordRepository.save(record);
     }
 
+    @Transactional
+    public void delete(Long id) {
+        BorrowRecord record = get(id);
+        if (record.getStatus() == BorrowStatus.BORROWED) {
+            Book book = record.getBook();
+            book.setAvailableCopies(book.getAvailableCopies() + 1);
+        }
+        borrowRecordRepository.delete(record);
+    }
+
     public long countActiveBorrows() {
         return borrowRecordRepository.countByStatus(BorrowStatus.BORROWED);
     }
