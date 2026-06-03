@@ -176,6 +176,32 @@ textarea {
   gap: 10px;
 }
 
+.data-source-chip {
+  min-width: 150px;
+  display: grid;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 1px solid #d7deea;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.data-source-chip.desktop {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.data-source-chip span {
+  color: #182230;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.data-source-chip small {
+  color: #64748b;
+  font-size: 12px;
+}
+
 .main {
   padding: 28px;
 }
@@ -198,7 +224,7 @@ textarea {
   display: grid;
   grid-template-columns: repeat(6, minmax(140px, 1fr));
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 
 .stat-card {
@@ -259,6 +285,34 @@ textarea {
 .tone-red .stat-icon {
   color: #b91c1c;
   background: #fee2e2;
+}
+
+.status-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.status-strip > div {
+  min-height: 70px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 13px 15px;
+  border: 1px solid #e1e7f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.status-strip span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.status-strip strong {
+  color: #182230;
+  font-size: 15px;
 }
 
 .content-panel {
@@ -331,6 +385,10 @@ textarea {
     grid-template-columns: repeat(3, minmax(150px, 1fr));
   }
 
+  .status-strip {
+    grid-template-columns: 1fr;
+  }
+
   .toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -366,11 +424,17 @@ textarea {
     flex-direction: column;
   }
 
+  .header-actions,
+  .data-source-chip {
+    width: 100%;
+  }
+
   .main {
     padding: 16px;
   }
 
   .stat-grid,
+  .status-strip,
   .toolbar,
   .form-grid {
     grid-template-columns: 1fr;

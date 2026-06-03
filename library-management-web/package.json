@@ -8,7 +8,8 @@
     "electron:dev": "npm run build:backend && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
     "build": "vite build",
     "build:backend": "cd ../library-management && mvnw.cmd -q -DskipTests package",
-    "build:desktop": "npm run build:backend && npm run build && electron-builder",
+    "build:runtime": "powershell -ExecutionPolicy Bypass -File scripts/build-runtime.ps1",
+    "build:desktop": "npm run build:backend && npm run build:runtime && npm run build && electron-builder",
     "preview": "vite preview"
   },
   "main": "electron/main.cjs",
@@ -24,6 +25,10 @@
       {
         "from": "../library-management/target/library-management-0.0.1-SNAPSHOT.jar",
         "to": "backend/library-management.jar"
+      },
+      {
+        "from": "build/runtime",
+        "to": "runtime"
       }
     ],
     "directories": {

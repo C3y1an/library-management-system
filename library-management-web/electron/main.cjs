@@ -109,6 +109,21 @@ function getBackendJarPath() {
   return path.resolve(__dirname, '..', '..', 'library-management', 'target', 'library-management-0.0.1-SNAPSHOT.jar')
 }
 
+function getJavaExecutablePath() {
+  const executable = process.platform === 'win32' ? 'java.exe' : 'java'
+  const packagedJava = path.join(process.resourcesPath, 'runtime', 'bin', executable)
+  if (fs.existsSync(packagedJava)) {
+    return packagedJava
+  }
+
+  const devRuntimeJava = path.resolve(__dirname, '..', 'build', 'runtime', 'bin', executable)
+  if (fs.existsSync(devRuntimeJava)) {
+    return devRuntimeJava
+  }
+
+  return 'java'
+}
+
 function getEmbeddedDatabasePath() {
   const dataPath = path.join(app.getPath('userData'), 'data')
   fs.mkdirSync(dataPath, { recursive: true })
@@ -191,8 +206,10 @@ function startBackend(settings) {
 
   const backendLog = fs.openSync(getBackendLogPath(), 'a')
   fs.writeSync(backendLog, `\n\n[${new Date().toISOString()}] 启动本地后端：${getLocalDatabaseLabel(settings)}\n`)
+  const javaExecutable = getJavaExecutablePath()
+  fs.writeSync(backendLog, `[${new Date().toISOString()}] Java Runtime：${javaExecutable}\n`)
 
-  backendProcess = spawn('java', [
+  backendProcess = spawn(javaExecutable, [
     '-jar',
     jarPath,
     '--spring.profiles.active=desktop',
@@ -209,6 +226,11 @@ function startBackend(settings) {
   })
 
   backendProcess.on('exit', () => {
+    backendProcess = null
+  })
+
+  backendProcess.on('error', (error) => {
+    fs.writeSync(backendLog, `[${new Date().toISOString()}] 后端进程启动失败：${error.message}\n`)
     backendProcess = null
   })
 }
@@ -316,6 +338,12 @@ function openDatabaseSettingsWindow() {
   })
 }
 
+function notifyMainWindowSettingsChanged() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('database-settings:changed')
+  }
+}
+
 function setupMenu() {
   const template = [
     {
@@ -395,8 +423,13 @@ ipcMain.handle('database-settings:get', () => {
   }
 })
 
+ipcMain.handle('database-settings:open', () => {
+  openDatabaseSettingsWindow()
+})
+
 ipcMain.handle('database-settings:save', (_event, settings) => {
   const savedSettings = writeSettings(settings || {})
+  notifyMainWindowSettingsChanged()
   return {
     ...savedSettings,
     activeApiBaseUrl,

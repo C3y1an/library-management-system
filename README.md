@@ -83,6 +83,8 @@ Electron 开发模式会先构建后端 Jar，再由 Electron 主进程自动启
 http://127.0.0.1:18080/api
 ```
 
+桌面端的目标交付方式是安装后直接使用：安装包会携带前端静态文件、后端 Jar 和内置 Java Runtime。用户不需要先打开 PowerShell 启动后端，也不需要单独安装 Java。桌面端默认使用内置 H2 文件数据库，数据保存在应用用户数据目录；如需切换本机 MySQL、自定义 H2 文件或云端 API，可在应用右上角进入“数据源设置”，也可通过菜单“设置 -> 切换数据库”进入。
+
 ## 数据库模式
 
 ### H2 开发库
@@ -156,3 +158,5 @@ npm run build
 cd library-management-web
 npm run build:desktop
 ```
+
+`build:desktop` 会依次构建后端 Jar、生成内置 Java Runtime、构建前端并调用 electron-builder。第七周阶段可先验证 `npm run build:backend`、`npm run build:runtime` 和 `npm run build`，最终提交前再执行完整打包。

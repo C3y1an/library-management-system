@@ -64,6 +64,12 @@ npm run build:backend
 http://127.0.0.1:18080/api
 ```
 
+桌面端启动逻辑：
+
+- 开发模式下，Electron 主进程会自动启动后端 Jar，不需要用户手动打开 PowerShell 运行后端。
+- 正式安装包中会携带后端 Jar 和内置 Java Runtime，用户安装后双击桌面端程序即可使用。
+- 默认使用内置 H2 文件数据库，数据保存在应用用户数据目录；也可以在页面右上角或菜单中进入“数据源设置”切换本机 MySQL、指定 H2 文件或云端 API。
+
 ## 数据库切换
 
 桌面端菜单：
@@ -98,6 +104,14 @@ npm run build
 ```powershell
 npm run build:backend
 ```
+
+桌面端 Java Runtime 构建：
+
+```powershell
+npm run build:runtime
+```
+
+该命令使用本机 JDK 的 `jlink` 生成安装包要携带的精简 Java Runtime。构建桌面安装包前需要安装 JDK 21 或正确设置 `JAVA_HOME`。
 
 桌面端安装包构建：
 

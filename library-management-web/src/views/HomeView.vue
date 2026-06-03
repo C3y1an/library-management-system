@@ -11,6 +11,7 @@ import {
   Plus,
   Reading,
   RefreshRight,
+  Setting,
   Search,
   SwitchButton,
   Tickets,
@@ -39,6 +40,8 @@ const appStore = useAppStore()
 const activeSection = ref('dashboard')
 const loading = ref(false)
 const session = ref(JSON.parse(localStorage.getItem('library_user') || 'null'))
+const isDesktop = Boolean(window.libraryDesktop)
+const desktopSettings = ref(null)
 
 const overview = ref({
   totalBooks: 0,
@@ -191,11 +194,52 @@ const statCards = computed(() => [
   { label: '逾期记录', value: overview.value.overdueBorrows, icon: DataAnalysis, tone: 'red' },
 ])
 
+const desktopModeLabel = computed(() => {
+  return desktopSettings.value?.activeModeLabel || (isDesktop ? '本地桌面模式' : 'Web 模式')
+})
+
+const stockUsageText = computed(() => {
+  const total = Number(overview.value.totalCopies || 0)
+  const available = Number(overview.value.availableCopies || 0)
+  if (!total) {
+    return '暂无馆藏数据'
+  }
+  const ratio = Math.round((available / total) * 100)
+  return `可借率 ${ratio}%（${available}/${total}）`
+})
+
+const circulationAlertText = computed(() => {
+  const active = Number(overview.value.activeBorrows || 0)
+  const overdue = Number(overview.value.overdueBorrows || 0)
+  if (overdue > 0) {
+    return `当前有 ${overdue} 条逾期记录，建议优先处理。`
+  }
+  return active > 0 ? `当前有 ${active} 条借阅中记录。` : '当前没有未归还记录。'
+})
+
 onMounted(() => {
+  loadDesktopSettings()
   if (session.value) {
     refreshAll()
   }
 })
+
+async function loadDesktopSettings() {
+  if (!window.libraryDesktop?.getDatabaseSettings) {
+    return
+  }
+  try {
+    desktopSettings.value = await window.libraryDesktop.getDatabaseSettings()
+  } catch {
+    desktopSettings.value = null
+  }
+}
+
+if (window.libraryDesktop?.onDatabaseSettingsChanged) {
+  window.libraryDesktop.onDatabaseSettingsChanged(() => {
+    loadDesktopSettings()
+  })
+}
 
 function today() {
   return new Date().toISOString().slice(0, 10)
@@ -272,6 +316,12 @@ function logout() {
   session.value = null
   localStorage.removeItem('library_user')
   localStorage.removeItem('library_token')
+}
+
+async function openDatabaseSettings() {
+  if (window.libraryDesktop?.openDatabaseSettings) {
+    await window.libraryDesktop.openDatabaseSettings()
+  }
 }
 
 async function refreshAll() {
@@ -594,6 +644,11 @@ function isOverdue(record) {
           <span>后端接口：{{ API_BASE_URL }}</span>
         </div>
         <div class="header-actions">
+          <div class="data-source-chip" :class="{ desktop: isDesktop }">
+            <span>{{ desktopModeLabel }}</span>
+            <small>{{ isDesktop ? '桌面端自动后端' : 'Web API' }}</small>
+          </div>
+          <el-button v-if="isDesktop" :icon="Setting" @click="openDatabaseSettings">数据源设置</el-button>
           <el-button :icon="RefreshRight" :loading="loading" @click="refreshAll">刷新</el-button>
           <el-button :icon="SwitchButton" @click="logout">退出</el-button>
         </div>
@@ -614,6 +669,20 @@ function isOverdue(record) {
               <strong>{{ card.value }}</strong>
             </article>
           </div>
+          <section class="status-strip">
+            <div>
+              <span>库存健康度</span>
+              <strong>{{ stockUsageText }}</strong>
+            </div>
+            <div>
+              <span>流通提醒</span>
+              <strong>{{ circulationAlertText }}</strong>
+            </div>
+            <div>
+              <span>数据来源</span>
+              <strong>{{ desktopModeLabel }}</strong>
+            </div>
+          </section>
           <section class="content-panel">
             <div class="panel-header">
               <div>
